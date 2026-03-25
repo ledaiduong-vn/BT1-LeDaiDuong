@@ -13,10 +13,40 @@ DESTINATION_EMAIL = "denergylamdong@gmail.com"
 
 LOGO_FILENAME = "Annotation 2026-03-25 194156.png"
 
+HERO_IMAGE_FILENAME = "hero_flower_solar_wind.png"
+
 def _hero_image_path() -> str:
-    # Ảnh hero được tạo tự động bởi công cụ và hiện đang nằm trong thư mục projects của Cursor.
-    # Giữ path tuyệt đối để chắc chắn app luôn tìm thấy ảnh khi chạy trên máy bạn.
-    return r"C:\Users\PC\.cursor\projects\d-My-data-Hoc-Python-2026-Cursor-Baitap-P2-Baitap1\assets\hero_flower_solar_wind.png"
+    """
+    Trả về đường dẫn ảnh hero.
+
+    Lưu ý: ảnh hero có thể nằm trong nhiều vị trí khác nhau (tuỳ môi trường Cursor),
+    nên ta thử nhiều candidate path để app luôn tìm thấy ảnh.
+    """
+    candidates: list[str] = []
+
+    # 1) Nếu bạn tự copy vào thư mục assets của project.
+    candidates.append(os.path.join(os.path.dirname(__file__), "assets", HERO_IMAGE_FILENAME))
+
+    # 2) Nếu ảnh nằm ngay trong thư mục project.
+    candidates.append(os.path.join(os.path.dirname(__file__), HERO_IMAGE_FILENAME))
+
+    # 3) Thử trong thư mục Cursor projects (hiện tại công cụ đã tạo ảnh ở đây).
+    cursor_projects_root = os.path.join(os.path.expanduser("~"), ".cursor", "projects")
+    try:
+        if os.path.isdir(cursor_projects_root):
+            for folder in os.listdir(cursor_projects_root):
+                assets_path = os.path.join(cursor_projects_root, folder, "assets", HERO_IMAGE_FILENAME)
+                candidates.append(assets_path)
+    except Exception:
+        # Nếu không truy cập được thư mục, bỏ qua.
+        pass
+
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+
+    # Không tìm thấy, trả về path theo candidate đầu tiên để load_hero_image() kiểm tra tồn tại.
+    return candidates[0] if candidates else os.path.join(os.path.dirname(__file__), "assets", HERO_IMAGE_FILENAME)
 
 
 def _logo_path() -> str:
@@ -32,7 +62,6 @@ def load_logo() -> Optional[Image.Image]:
     return Image.open(path)
 
 
-@st.cache_data(show_spinner=False)
 def load_hero_image() -> Optional[Image.Image]:
     path = _hero_image_path()
     if not os.path.exists(path):
